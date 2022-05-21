@@ -1,7 +1,7 @@
 package = "sha1"
 version = "scm-2"
 source = {
-   url = "git+https://github.com/mpeterv/sha1.git",
+   url = "git+https://github.com/alinarezrangel/lua-sha1.git",
 }
 description = {
    summary  = "SHA-1 and HMAC-SHA1 in pure Lua",
