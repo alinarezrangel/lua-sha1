@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1 (2022-05-21)
+
+### Changed
+
+* Changed rockspec file so that Lua 5.4 is supported.
+
 ## 0.6.0 (2018-10-06)
 
 ### Added

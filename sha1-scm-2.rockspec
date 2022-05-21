@@ -1,5 +1,5 @@
 package = "sha1"
-version = "scm-1"
+version = "scm-2"
 source = {
    url = "git+https://github.com/mpeterv/sha1.git",
 }
@@ -11,7 +11,7 @@ using bit operation libraries or Lua 5.3 operators when available.]],
    license  = "MIT"
 }
 dependencies = {
-   "lua >= 5.1, < 5.4"
+   "lua >= 5.1, < 5.5"
 }
 build = {
    type = "builtin",
