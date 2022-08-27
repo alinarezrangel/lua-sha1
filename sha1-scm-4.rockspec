@@ -1,5 +1,5 @@
 package = "sha1"
-version = "scm-2"
+version = "scm-4"
 source = {
    url = "git+https://github.com/alinarezrangel/lua-sha1.git",
 }

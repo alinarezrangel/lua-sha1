@@ -2,7 +2,7 @@ local common = require "sha1.common"
 
 local sha1 = {
    -- Meta fields retained for compatibility.
-   _VERSION     = "sha.lua 0.6.1",
+   _VERSION     = "sha.lua 0.8.0",
    _URL         = "https://github.com/mpeterv/sha1",
    _DESCRIPTION = [[
 SHA-1 secure hash and HMAC-SHA1 signature computation in Lua,
@@ -36,10 +36,10 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.]]
 }
 
-sha1.version = "0.6.1"
+sha1.version = "0.8.0"
 
 local function choose_ops()
-   if _VERSION:find("5%.3") then
+   if _VERSION:find("5%.[34]") then
       return "lua53_ops"
    elseif pcall(require, "bit") then
       return "bit_ops"
@@ -65,6 +65,7 @@ local sbyte = string.byte
 local schar = string.char
 local sformat = string.format
 local srep = string.rep
+local ssub = string.sub
 
 local function hex_to_binary(hex)
    return (hex:gsub("..", function(hexval)
@@ -159,8 +160,107 @@ function sha1.sha1(str)
    return sformat("%08x%08x%08x%08x%08x", h0, h1, h2, h3, h4)
 end
 
+-- TODO: Clean up this mess
+function sha1.sha1_chunked(len, chunk)
+   -- Input preprocessing.
+   -- First, append a `1` bit and seven `0` bits.
+   local first_append = schar(0x80)
+
+   -- Next, append some zero bytes to make the length of the final message a multiple of 64.
+   -- Eight more bytes will be added next.
+   local non_zero_message_bytes = len + 1 + 8
+   local second_append = srep(schar(0), -non_zero_message_bytes % 64)
+
+   -- Finally, append the length of the original message in bits as a 64-bit number.
+   -- Assume that it fits into the lower 32 bits.
+   local third_append = schar(0, 0, 0, 0, uint32_to_bytes(len * 8))
+
+   local tail = first_append .. second_append .. third_append
+
+   assert((len + #tail) % 64 == 0)
+
+   -- Initialize hash value.
+   local h0 = 0x67452301
+   local h1 = 0xEFCDAB89
+   local h2 = 0x98BADCFE
+   local h3 = 0x10325476
+   local h4 = 0xC3D2E1F0
+
+   local w = {}
+
+   -- Process the input in successive 64-byte chunks.
+   for chunk_start = 1, len, 64 do
+      -- Load the chunk into W[0..15] as uint32 numbers.
+      local uint32_start = chunk_start
+
+      local chunk_str = chunk(64)
+      if #chunk_str < 64 then
+         local new_tail = ssub(tail, 64 - #chunk_str + 1, -1)
+         chunk_str = chunk_str .. ssub(tail, 1, 64 - #chunk_str)
+         tail = new_tail
+      end
+
+      for i = 0, 15 do
+         w[i] = bytes_to_uint32(sbyte(chunk_str, uint32_start, uint32_start + 3))
+         uint32_start = uint32_start + 4
+      end
+
+      -- Extend the input vector.
+      for i = 16, 79 do
+         w[i] = uint32_lrot(uint32_xor_4(w[i - 3], w[i - 8], w[i - 14], w[i - 16]), 1)
+      end
+
+      -- Initialize hash value for this chunk.
+      local a = h0
+      local b = h1
+      local c = h2
+      local d = h3
+      local e = h4
+
+      -- Main loop.
+      for i = 0, 79 do
+         local f
+         local k
+
+         if i <= 19 then
+            f = uint32_ternary(b, c, d)
+            k = 0x5A827999
+         elseif i <= 39 then
+            f = uint32_xor_3(b, c, d)
+            k = 0x6ED9EBA1
+         elseif i <= 59 then
+            f = uint32_majority(b, c, d)
+            k = 0x8F1BBCDC
+         else
+            f = uint32_xor_3(b, c, d)
+            k = 0xCA62C1D6
+         end
+
+         local temp = (uint32_lrot(a, 5) + f + e + k + w[i]) % 4294967296
+         e = d
+         d = c
+         c = uint32_lrot(b, 30)
+         b = a
+         a = temp
+      end
+
+      -- Add this chunk's hash to result so far.
+      h0 = (h0 + a) % 4294967296
+      h1 = (h1 + b) % 4294967296
+      h2 = (h2 + c) % 4294967296
+      h3 = (h3 + d) % 4294967296
+      h4 = (h4 + e) % 4294967296
+   end
+
+   return sformat("%08x%08x%08x%08x%08x", h0, h1, h2, h3, h4)
+end
+
 function sha1.binary(str)
    return hex_to_binary(sha1.sha1(str))
+end
+
+function sha1.binary_chunked(len, chunk)
+   return hex_to_binary(sha1.sha1_chunked(len, chunk))
 end
 
 -- Precalculate replacement tables.

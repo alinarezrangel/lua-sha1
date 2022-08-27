@@ -13,7 +13,7 @@ This module implements SHA-1 and HMAC-SHA-1 in pure Lua. For better performance 
 * On Lua 5.2:
   - Uses `bit` module if it is available.
   - Otherwise, built-in `bit32` module.
-* On Lua 5.3: uses built-in bitwise operators.
+* On Lua 5.3 and 5.4: uses built-in bitwise operators.
 * On LuaJIT 2.x: uses built-in `bit` module.
 
 ## Installation

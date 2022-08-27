@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.0 (2022-08-27)
+
+## Added
+
+* New `sha1.sha1_chunked` function which allows you to hash messages with known
+  length but dynamically generated contents.
+
+## 0.7.0 (2022-08-27)
+
+### Changed
+
+* `init.lua` now uses the Lua 5.3 bit operators on Lua 5.4.
+
 ## 0.6.1 (2022-05-21)
 
 ### Changed
